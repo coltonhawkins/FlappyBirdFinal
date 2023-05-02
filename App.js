@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
   Animated,
   TouchableWithoutFeedback,
-  Text,
   Dimensions,
 } from 'react-native';
 
@@ -12,48 +11,54 @@ const BIRD_SIZE = 25;
 const GRAVITY = 9.8; // Acceleration due to gravity
 
 const PIPE_WIDTH = 60;
-const PIPE_HEIGHT = 120;
+const PIPE_HEIGHT = 60;
+const GAP_SIZE = 200;
+const PIPE_OFFSET = 50;
 
 const WIDTH = Dimensions.get('window').width;
-const HEIGHT = Dimensions.get('window').width;
+const HEIGHT = Dimensions.get('window').height;
 
-function App() {
-  const getRandomGapY = () => {
-    const minGapY = PIPE_HEIGHT * 2;
-    const maxGapY = HEIGHT - PIPE_HEIGHT * 3;
-    return minGapY + Math.random() * (maxGapY - minGapY);
-  };
+const getRandomGapY = () => {
+  const minGapY = PIPE_HEIGHT * 2;
+  const maxGapY = HEIGHT - GAP_SIZE - minGapY;
+  const randomGapY = Math.random() * maxGapY;
+  return randomGapY + minGapY;
+};
 
-  const Pipe = ({ pipeX, gapY }) => {
-    return (
-      <>
-        <Animated.View
-          style={[
-            styles.pipe,
-            { height: gapY - PIPE_HEIGHT / 2, left: pipeX },
-            { transform: [{ rotate: '180deg' }] },
-          ]}
-        />
-        <Animated.View
-          style={[
-            styles.pipe,
-            { height: HEIGHT - gapY - PIPE_HEIGHT / 2, left: pipeX, bottom: 0 },
-          ]}
-        />
-      </>
-    );
-  };
+const Pipe = ({ pipeX, gapY }) => {
+  const bottomPipeHeight =
+    HEIGHT - gapY - GAP_SIZE / 2 - PIPE_HEIGHT / 2 + PIPE_OFFSET; // adjust the bottom pipe height
+  const topPipeHeight = gapY - GAP_SIZE / 2 - PIPE_HEIGHT / 2 - PIPE_OFFSET; // adjust the top pipe height
+  return (
+    <>
+      <Animated.View
+        style={[
+          styles.pipe,
+          { height: topPipeHeight, left: pipeX, top: 0 },
+          { transform: [{ rotate: '180deg' }] },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.pipe,
+          { height: bottomPipeHeight, left: pipeX, bottom: 0 },
+        ]}
+      />
+    </>
+  );
+};
 
+const App = () => {
   const [birdY, setBirdY] = useState(new Animated.Value(0)); // Initial position of the ball
   const [currentPosition, setCurrentPosition] = useState(0); // Current position of the ball
-
+  const PIPE_GAP = WIDTH / 3;
   const [pipes, setPipes] = useState([
-    { x: new Animated.Value(WIDTH), gapY: getRandomGapY() },
-    { x: new Animated.Value(WIDTH + WIDTH / 2), gapY: getRandomGapY() },
-    { x: new Animated.Value(WIDTH + WIDTH), gapY: getRandomGapY() },
+    { x: new Animated.Value(WIDTH - 20), gapY: getRandomGapY() },
+    { x: new Animated.Value(WIDTH + PIPE_GAP), gapY: getRandomGapY() },
+    { x: new Animated.Value(WIDTH + 2 * PIPE_GAP + 20), gapY: getRandomGapY() },
   ]);
 
-  const PIPE_SPEED = 5;
+  const PIPE_SPEED = 3;
 
   useEffect(() => {
     Animated.timing(birdY, {
@@ -65,17 +70,17 @@ function App() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setPipes((pipes) => {
-        const newPipes = [...pipes];
-        for (let i = 0; i < newPipes.length; i++) {
-          newPipes[i].x.setValue(newPipes[i].x._value - PIPE_SPEED);
-          if (newPipes[i].x._value < -PIPE_WIDTH) {
-            newPipes[i].x.setValue(WIDTH);
-            newPipes[i].gapY = getRandomGapY();
+      setPipes((pipes) =>
+        pipes.map((pipe) => {
+          const newPipe = { ...pipe };
+          newPipe.x.setValue(newPipe.x._value - PIPE_SPEED);
+          if (newPipe.x._value < -PIPE_WIDTH) {
+            newPipe.x.setValue(WIDTH);
+            newPipe.gapY = getRandomGapY();
           }
-        }
-        return newPipes;
-      });
+          return newPipe;
+        })
+      );
     }, 1000 / 60);
 
     return () => clearInterval(interval);
@@ -122,7 +127,7 @@ function App() {
       </View>
     </TouchableWithoutFeedback>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -145,4 +150,3 @@ const styles = StyleSheet.create({
 });
 
 export default App;
-
