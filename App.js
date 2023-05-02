@@ -18,11 +18,13 @@ const PIPE_OFFSET = 50;
 const WIDTH = Dimensions.get('window').width;
 const HEIGHT = Dimensions.get('window').height;
 
-const getRandomGapY = () => {
-  const minGapY = PIPE_HEIGHT * 2;
-  const maxGapY = HEIGHT - GAP_SIZE - minGapY;
-  const randomGapY = Math.random() * maxGapY;
-  return randomGapY + minGapY;
+const GAP_DEVIATION = 200;
+
+const getRandomGapY = (prevGapY) => {
+  const minGapY = Math.max(PIPE_HEIGHT * 3, prevGapY - GAP_DEVIATION);
+  const maxGapY = Math.min(HEIGHT - GAP_SIZE - PIPE_HEIGHT * 2, prevGapY + GAP_DEVIATION);
+  const randomGapY = Math.random() * (maxGapY - minGapY) + minGapY;
+  return randomGapY;
 };
 
 const Pipe = ({ pipeX, gapY }) => {
@@ -52,10 +54,11 @@ const App = () => {
   const [birdY, setBirdY] = useState(new Animated.Value(0)); // Initial position of the ball
   const [currentPosition, setCurrentPosition] = useState(0); // Current position of the ball
   const PIPE_GAP = WIDTH / 3;
+  const initialGapY = getRandomGapY(HEIGHT / 2);
   const [pipes, setPipes] = useState([
-    { x: new Animated.Value(WIDTH - 20), gapY: getRandomGapY() },
-    { x: new Animated.Value(WIDTH + PIPE_GAP), gapY: getRandomGapY() },
-    { x: new Animated.Value(WIDTH + 2 * PIPE_GAP + 20), gapY: getRandomGapY() },
+    { x: new Animated.Value(WIDTH - 20), gapY: initialGapY },
+    { x: new Animated.Value(WIDTH + PIPE_GAP), gapY: getRandomGapY(initialGapY) },
+    { x: new Animated.Value(WIDTH + 2 * PIPE_GAP + 20), gapY: getRandomGapY(initialGapY) },
   ]);
 
   const PIPE_SPEED = 3;
@@ -71,36 +74,39 @@ const App = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setPipes((pipes) =>
-        pipes.map((pipe) => {
+        pipes.map((pipe, index) => {
           const newPipe = { ...pipe };
           newPipe.x.setValue(newPipe.x._value - PIPE_SPEED);
           if (newPipe.x._value < -PIPE_WIDTH) {
             newPipe.x.setValue(WIDTH);
-            newPipe.gapY = getRandomGapY();
+            newPipe.gapY = getRandomGapY(pipes[(index + pipes.length - 1) % pipes.length].gapY);
           }
           return newPipe;
         })
       );
     }, 1000 / 60);
 
-    return () => clearInterval(interval);
+        return () => clearInterval(interval);
   }, []);
 
-  const handlePress = () => {
-    //Jumping up
+const handlePress = () => {
+  // Stop the current animations
+  birdY.stopAnimation(() => {
+    // Jumping up
     Animated.timing(birdY, {
-      toValue: birdY._value - 0.3,
-      duration: 500,
+      toValue: birdY._value - 0.16,
+      duration: 150,
       useNativeDriver: true,
     }).start(() => {
-      //gravity down
+      // Gravity down
       Animated.timing(birdY, {
         toValue: 1,
-        duration: 3000,
+        duration: 1345,
         useNativeDriver: true,
       }).start();
     });
-  };
+  });
+};
 
   useEffect(() => {
     setCurrentPosition(birdY._value * 500); // Convert birdY value to current position
@@ -150,3 +156,4 @@ const styles = StyleSheet.create({
 });
 
 export default App;
+
