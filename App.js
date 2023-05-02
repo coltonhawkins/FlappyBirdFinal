@@ -5,6 +5,7 @@ import {
   Animated,
   TouchableWithoutFeedback,
   Dimensions,
+  Text,
 } from 'react-native';
 
 const BIRD_SIZE = 25;
@@ -18,7 +19,7 @@ const PIPE_OFFSET = 50;
 const WIDTH = Dimensions.get('window').width;
 const HEIGHT = Dimensions.get('window').height;
 
-const GAP_DEVIATION = 200;
+const GAP_DEVIATION = 150;
 
 const getRandomGapY = (prevGapY) => {
   const minGapY = Math.max(PIPE_HEIGHT * 3, prevGapY - GAP_DEVIATION);
@@ -71,11 +72,22 @@ const App = () => {
     }).start(); // Start the animation
   }, []);
 
+  const [score, setScore] = useState(1);
+
+ const checkPassedPipe = () => {
+  pipes.forEach((pipe) => {
+    const pipeXValue = pipe.x._value;
+    if (pipeXValue < BIRD_SIZE && pipeXValue + PIPE_SPEED >= BIRD_SIZE) {
+      setScore((prevScore) => prevScore + 1);
+    }
+  });
+};
+
   useEffect(() => {
     const interval = setInterval(() => {
       setPipes((pipes) =>
         pipes.map((pipe, index) => {
-          const newPipe = { ...pipe };
+          const newPipe = { ...pipe};          
           newPipe.x.setValue(newPipe.x._value - PIPE_SPEED);
           if (newPipe.x._value < -PIPE_WIDTH) {
             newPipe.x.setValue(WIDTH);
@@ -84,9 +96,10 @@ const App = () => {
           return newPipe;
         })
       );
+      checkPassedPipe();
     }, 1000 / 60);
 
-        return () => clearInterval(interval);
+    return () => clearInterval(interval);
   }, []);
 
 const handlePress = () => {
@@ -130,6 +143,7 @@ const handlePress = () => {
           <Pipe key={i} pipeX={x} gapY={gapY} />
         ))}
         <Animated.View style={[styles.bird, birdStyle]} />
+        <Text style={styles.score}>{score}</Text>
       </View>
     </TouchableWithoutFeedback>
   );
@@ -152,6 +166,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: PIPE_WIDTH,
     backgroundColor: 'green',
+  },
+  score: {
+    position: 'absolute',
+    top: 50,
+    left: WIDTH / 2,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'black',
   },
 });
 
