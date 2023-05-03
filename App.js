@@ -157,9 +157,12 @@ const App = () => {
         {gameStarted && <Text style={styles.score}>{score}</Text>}
 
         {!gameStarted && (
+          <>
+          <Text style={styles.title}>Budget Flappy Bird</Text>
           <View style={styles.startButton}>
             <Text style={styles.startButtonText}>Start</Text>
           </View>
+          </>
         )}
       </View>
     </TouchableWithoutFeedback>
@@ -188,30 +191,37 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 50,
     left: WIDTH / 2,
-    fontSize: 24,
+    fontSize: 35,
     fontWeight: 'bold',
     color: 'black',
+  },
+  title: {
+    position: 'absolute',
+    top: HEIGHT / 2 - 200,
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: 'white',
+    textAlign: 'center',
   },
   startButton: {
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'lightblue',
-    borderWidth: 2,
-    borderColor: 'black',
+    borderWidth: 5,
+    borderColor: 'white',
     borderRadius: 10,
     paddingHorizontal: 40,
     paddingVertical: 20,
   },
   startButtonText: {
-    fontSize: 30,
+    fontSize: 40,
     fontWeight: 'bold',
-    color: 'black',
+    color: 'white',
   },
 });
 
+
 export default App;
-
-
 
 
