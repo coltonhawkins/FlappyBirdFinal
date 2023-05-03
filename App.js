@@ -6,20 +6,21 @@ import {
   TouchableWithoutFeedback,
   Dimensions,
   Text,
+  TouchableOpacity
 } from 'react-native';
 
 const BIRD_SIZE = 25;
 const GRAVITY = 9.8;
 
-const PIPE_WIDTH = 60;
+const PIPE_WIDTH = 60 * 2;
 const PIPE_HEIGHT = 60;
 const GAP_SIZE = 200;
-const PIPE_OFFSET = 50;
+const PIPE_OFFSET = 0;
 
 const WIDTH = Dimensions.get('window').width;
 const HEIGHT = Dimensions.get('window').height;
 
-const GAP_DEVIATION = 150;
+const GAP_DEVIATION = 225;
 
 const getRandomGapY = (prevGapY) => {
   const minGapY = Math.max(PIPE_HEIGHT * 3, prevGapY - GAP_DEVIATION);
@@ -54,8 +55,9 @@ const Pipe = ({ pipeX, gapY }) => {
 const App = () => {
   const [birdY, setBirdY] = useState(new Animated.Value(0));
   const [currentPosition, setCurrentPosition] = useState(0);
-  const PIPE_GAP = WIDTH / 3;
+  const PIPE_GAP = WIDTH;
   const initialGapY = getRandomGapY(HEIGHT / 2);
+  const [pipeIndex, setPipeIndex] = useState(0);
   const [pipes, setPipes] = useState([
     { x: new Animated.Value(WIDTH - 20), gapY: initialGapY },
     { x: new Animated.Value(WIDTH + PIPE_GAP), gapY: getRandomGapY(initialGapY) },
@@ -69,55 +71,13 @@ const App = () => {
     setGameStarted(true);
   };
 
-  useEffect(() => {
-    if (gameStarted) {
-      Animated.timing(birdY, {
-        toValue: 1,
-        duration: 2000,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [gameStarted]);
-
-  const [score, setScore] = useState(1);
-
-  const checkPassedPipe = () => {
-    pipes.forEach((pipe) => {
-      const pipeXValue = pipe.x._value;
-      if (pipeXValue < BIRD_SIZE && pipeXValue + PIPE_SPEED >= BIRD_SIZE) {
-        setScore((prevScore) => prevScore + 1);
-      }
-    });
-  };
-
-  useEffect(() => {
-    if (gameStarted) {
-      const interval = setInterval(() => {
-        setPipes((pipes) =>
-          pipes.map((pipe, index) => {
-            const newPipe = { ...pipe};        
-            newPipe.x.setValue(newPipe.x._value - PIPE_SPEED);
-            if (newPipe.x._value < -PIPE_WIDTH) {
-              newPipe.x.setValue(WIDTH);
-              newPipe.gapY = getRandomGapY(pipes[(index + pipes.length - 1) % pipes.length].gapY);
-            }
-            return newPipe;
-          })
-        );
-        checkPassedPipe();
-      }, 1000 / 60);
-
-      return () => clearInterval(interval);
-    }
-  }, [gameStarted]);
-
-  const handlePress = () => {
+   const handlePress = () => {
     if (!gameStarted) {
       startGame();
     } else {
       birdY.stopAnimation(() => {
         Animated.timing(birdY, {
-          toValue: birdY._value - 0.16,
+          toValue: birdY._value - 0.19,
           duration: 150,
           useNativeDriver: true,
         }).start(() => {
@@ -130,6 +90,83 @@ const App = () => {
       });
     }
   };
+
+  const [score, setScore] = useState(1);
+
+  const checkPassedPipe = () => {
+    pipes.forEach((pipe) => {
+      const pipeXValue = pipe.x._value;
+      if (pipeXValue < BIRD_SIZE && pipeXValue + PIPE_SPEED >= BIRD_SIZE) {
+        setScore((prevScore) => prevScore + 1);
+      }
+    });
+  };
+
+  const checkCollision = () => {
+  const birdYValue = birdY._value * 500;
+  const birdTop = birdYValue;
+  const birdBottom = birdYValue + BIRD_SIZE;
+
+  for (const pipe of pipes) {
+    const pipeXValue = pipe.x._value;
+
+    if (pipeXValue + PIPE_WIDTH >= 0 && pipeXValue <= BIRD_SIZE) {
+      const topPipeHeight = pipe.gapY - GAP_SIZE / 2 - PIPE_HEIGHT / 2 - PIPE_OFFSET;
+      const bottomPipeHeight = HEIGHT - pipe.gapY - GAP_SIZE / 2 - PIPE_HEIGHT / 2 + PIPE_OFFSET;
+
+      if (birdTop <= topPipeHeight || birdBottom >= HEIGHT - bottomPipeHeight) {
+        // Collision detected, stop the game
+        setGameStarted(false);
+      }
+    }
+  }
+};
+
+
+useEffect(() => {
+  if (gameStarted) {
+    const timer = setTimeout(() => {
+      setPipeIndex((pipeIndex + 1) % pipes.length);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }
+}, [gameStarted, pipeIndex]);
+
+useEffect(() => {
+    if (gameStarted) {
+      Animated.timing(birdY, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [gameStarted]);
+
+useEffect(() => {
+  if (gameStarted) {
+    const interval = setInterval(() => {
+      setPipes((pipes) =>
+        pipes.map((pipe, index) => {
+          const newPipe = { ...pipe };
+          if (index === pipeIndex) {
+            newPipe.x.setValue(newPipe.x._value - PIPE_SPEED);
+            if (newPipe.x._value < -PIPE_WIDTH) {
+              setPipeIndex((pipeIndex + 1) % pipes.length);
+              newPipe.x.setValue(WIDTH);
+              newPipe.gapY = getRandomGapY(pipes[(index + pipes.length - 1) % pipes.length].gapY);
+            }
+          }
+          return newPipe;
+        })
+      );
+      checkPassedPipe();
+    }, 1000 / 60);
+
+    return () => clearInterval(interval);
+  }
+}, [gameStarted]);
+
 
   useEffect(() => {
     setCurrentPosition(birdY._value * 500);
@@ -147,26 +184,28 @@ const App = () => {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={handlePress}>
-      <View style={styles.container}>
-        {gameStarted &&
-          pipes.map(({ x, gapY }, i) => (
-            <Pipe key={i} pipeX={x} gapY={gapY} />
-          ))}
-        <Animated.View style={[styles.bird, birdStyle]} />
-        {gameStarted && <Text style={styles.score}>{score}</Text>}
+  <View style={styles.container}>
+    {gameStarted &&
+      pipes.map(({ x, gapY }, i) => (
+        <Pipe key={i} pipeX={x} gapY={gapY} />
+      ))}
+    <Animated.View style={[styles.bird, birdStyle]} />
+    {gameStarted && <Text style={styles.score}>{score}</Text>}
 
-        {!gameStarted && (
-          <>
-          <Text style={styles.title}>Budget Flappy Bird</Text>
-          <View style={styles.startButton}>
-            <Text style={styles.startButtonText}>Start</Text>
-          </View>
-          </>
-        )}
-      </View>
-    </TouchableWithoutFeedback>
-  );
+    {!gameStarted ? (
+      <>
+        <Text style={styles.title}>Budget Flappy Bird</Text>
+        <TouchableOpacity onPress={handlePress} style={styles.startButton}>
+          <Text style={styles.startButtonText}>Start</Text>
+        </TouchableOpacity>
+      </>
+    ) : (
+      <TouchableOpacity onPress={handlePress} style={styles.jumpButton}>
+        <Text style={styles.jumpButtonText}>Jump</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+);
 };
 
 const styles = StyleSheet.create({
@@ -219,6 +258,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
   },
+  jumpButton: {
+  position: 'absolute',
+  bottom: 50,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: 'lightblue',
+  borderWidth: 5,
+  borderColor: 'white',
+  borderRadius: 10,
+  paddingHorizontal: 40,
+  paddingVertical: 20,
+},
+jumpButtonText: {
+  fontSize: 40,
+  fontWeight: 'bold',
+  color: 'white',
+},
+
 });
 
 
