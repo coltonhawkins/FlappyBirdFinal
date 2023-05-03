@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 
 const BIRD_SIZE = 25;
-const GRAVITY = 9.8; // Acceleration due to gravity
+const GRAVITY = 9.8;
 
 const PIPE_WIDTH = 60;
 const PIPE_HEIGHT = 60;
@@ -30,8 +30,8 @@ const getRandomGapY = (prevGapY) => {
 
 const Pipe = ({ pipeX, gapY }) => {
   const bottomPipeHeight =
-    HEIGHT - gapY - GAP_SIZE / 2 - PIPE_HEIGHT / 2 + PIPE_OFFSET; // adjust the bottom pipe height
-  const topPipeHeight = gapY - GAP_SIZE / 2 - PIPE_HEIGHT / 2 - PIPE_OFFSET; // adjust the top pipe height
+    HEIGHT - gapY - GAP_SIZE / 2 - PIPE_HEIGHT / 2 + PIPE_OFFSET;
+  const topPipeHeight = gapY - GAP_SIZE / 2 - PIPE_HEIGHT / 2 - PIPE_OFFSET;
   return (
     <>
       <Animated.View
@@ -52,8 +52,8 @@ const Pipe = ({ pipeX, gapY }) => {
 };
 
 const App = () => {
-  const [birdY, setBirdY] = useState(new Animated.Value(0)); // Initial position of the ball
-  const [currentPosition, setCurrentPosition] = useState(0); // Current position of the ball
+  const [birdY, setBirdY] = useState(new Animated.Value(0));
+  const [currentPosition, setCurrentPosition] = useState(0);
   const PIPE_GAP = WIDTH / 3;
   const initialGapY = getRandomGapY(HEIGHT / 2);
   const [pipes, setPipes] = useState([
@@ -64,73 +64,83 @@ const App = () => {
 
   const PIPE_SPEED = 3;
 
+  const [gameStarted, setGameStarted] = useState(false);
+  const startGame = () => {
+    setGameStarted(true);
+  };
+
   useEffect(() => {
-    Animated.timing(birdY, {
-      toValue: 1, // End value
-      duration: 2000, // Duration of animation in milliseconds
-      useNativeDriver: true, // Use native driver for performance
-    }).start(); // Start the animation
-  }, []);
+    if (gameStarted) {
+      Animated.timing(birdY, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [gameStarted]);
 
   const [score, setScore] = useState(1);
 
- const checkPassedPipe = () => {
-  pipes.forEach((pipe) => {
-    const pipeXValue = pipe.x._value;
-    if (pipeXValue < BIRD_SIZE && pipeXValue + PIPE_SPEED >= BIRD_SIZE) {
-      setScore((prevScore) => prevScore + 1);
-    }
-  });
-};
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPipes((pipes) =>
-        pipes.map((pipe, index) => {
-          const newPipe = { ...pipe};          
-          newPipe.x.setValue(newPipe.x._value - PIPE_SPEED);
-          if (newPipe.x._value < -PIPE_WIDTH) {
-            newPipe.x.setValue(WIDTH);
-            newPipe.gapY = getRandomGapY(pipes[(index + pipes.length - 1) % pipes.length].gapY);
-          }
-          return newPipe;
-        })
-      );
-      checkPassedPipe();
-    }, 1000 / 60);
-
-    return () => clearInterval(interval);
-  }, []);
-
-const handlePress = () => {
-  // Stop the current animations
-  birdY.stopAnimation(() => {
-    // Jumping up
-    Animated.timing(birdY, {
-      toValue: birdY._value - 0.16,
-      duration: 150,
-      useNativeDriver: true,
-    }).start(() => {
-      // Gravity down
-      Animated.timing(birdY, {
-        toValue: 1,
-        duration: 1345,
-        useNativeDriver: true,
-      }).start();
+  const checkPassedPipe = () => {
+    pipes.forEach((pipe) => {
+      const pipeXValue = pipe.x._value;
+      if (pipeXValue < BIRD_SIZE && pipeXValue + PIPE_SPEED >= BIRD_SIZE) {
+        setScore((prevScore) => prevScore + 1);
+      }
     });
-  });
-};
+  };
 
   useEffect(() => {
-    setCurrentPosition(birdY._value * 500); // Convert birdY value to current position
+    if (gameStarted) {
+      const interval = setInterval(() => {
+        setPipes((pipes) =>
+          pipes.map((pipe, index) => {
+            const newPipe = { ...pipe};        
+            newPipe.x.setValue(newPipe.x._value - PIPE_SPEED);
+            if (newPipe.x._value < -PIPE_WIDTH) {
+              newPipe.x.setValue(WIDTH);
+              newPipe.gapY = getRandomGapY(pipes[(index + pipes.length - 1) % pipes.length].gapY);
+            }
+            return newPipe;
+          })
+        );
+        checkPassedPipe();
+      }, 1000 / 60);
+
+      return () => clearInterval(interval);
+    }
+  }, [gameStarted]);
+
+  const handlePress = () => {
+    if (!gameStarted) {
+      startGame();
+    } else {
+      birdY.stopAnimation(() => {
+        Animated.timing(birdY, {
+          toValue: birdY._value - 0.16,
+          duration: 150,
+          useNativeDriver: true,
+        }).start(() => {
+          Animated.timing(birdY, {
+            toValue: 1,
+            duration: 1345,
+            useNativeDriver: true,
+          }).start();
+        });
+      });
+    }
+  };
+
+  useEffect(() => {
+    setCurrentPosition(birdY._value * 500);
   }, [birdY]);
 
   const birdStyle = {
     transform: [
       {
         translateY: birdY.interpolate({
-          inputRange: [0, 1], // Input range of the animation
-          outputRange: [0, 500], // Output range of the animation (height of the screen)
+          inputRange: [0, 1],
+          outputRange: [0, 500],
         }),
       },
     ],
@@ -139,11 +149,18 @@ const handlePress = () => {
   return (
     <TouchableWithoutFeedback onPress={handlePress}>
       <View style={styles.container}>
-        {pipes.map(({ x, gapY }, i) => (
-          <Pipe key={i} pipeX={x} gapY={gapY} />
-        ))}
+        {gameStarted &&
+          pipes.map(({ x, gapY }, i) => (
+            <Pipe key={i} pipeX={x} gapY={gapY} />
+          ))}
         <Animated.View style={[styles.bird, birdStyle]} />
-        <Text style={styles.score}>{score}</Text>
+        {gameStarted && <Text style={styles.score}>{score}</Text>}
+
+        {!gameStarted && (
+          <View style={styles.startButton}>
+            <Text style={styles.startButtonText}>Start</Text>
+          </View>
+        )}
       </View>
     </TouchableWithoutFeedback>
   );
@@ -175,7 +192,26 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'black',
   },
+  startButton: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'lightblue',
+    borderWidth: 2,
+    borderColor: 'black',
+    borderRadius: 10,
+    paddingHorizontal: 40,
+    paddingVertical: 20,
+  },
+  startButtonText: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    color: 'black',
+  },
 });
 
 export default App;
+
+
+
 
