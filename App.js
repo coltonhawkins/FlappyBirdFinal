@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 
 const BIRD_SIZE = 20;
+const GRAVITY = 9.8;
+
 const PIPE_WIDTH = 60 * 2;
 const PIPE_HEIGHT = 60;
 const GAP_SIZE = 200;
@@ -18,7 +20,7 @@ const PIPE_OFFSET = 0;
 const WIDTH = Dimensions.get('window').width;
 const HEIGHT = Dimensions.get('window').height;
 
-const GAP_DEVIATION = 225;
+const GAP_DEVIATION = 100;
 
 const getRandomGapY = (prevGapY) => {
   const minGapY = Math.max(PIPE_HEIGHT * 3, prevGapY - GAP_DEVIATION);
@@ -29,7 +31,7 @@ const getRandomGapY = (prevGapY) => {
   const randomGapY = Math.random() * (maxGapY - minGapY) + minGapY;
   return randomGapY;
 };
-  const Hitbox = ({ x, y, width, height }) => {
+const Hitbox = ({ x, y, width, height }) => {
   return (
     <View
       style={{
@@ -38,13 +40,14 @@ const getRandomGapY = (prevGapY) => {
         top: y,
         width,
         height,
-        backgroundColor: 'rgba(255, 0, 0, 0.5)',
+        backgroundColor: 'rgba(255, 0, 0, 1)',
       }}
     />
   );
 };
 const Pipe = ({ pipeX, gapY }) => {
-  const bottomPipeHeight = HEIGHT - gapY - GAP_SIZE / 2 - PIPE_HEIGHT / 2 + PIPE_OFFSET;
+  const bottomPipeHeight =
+    HEIGHT - gapY - GAP_SIZE / 2 - PIPE_HEIGHT / 2 + PIPE_OFFSET;
   const topPipeHeight = gapY - GAP_SIZE / 2 - PIPE_HEIGHT / 2 - PIPE_OFFSET;
   return (
     <>
@@ -61,18 +64,22 @@ const Pipe = ({ pipeX, gapY }) => {
           { height: bottomPipeHeight, left: pipeX, bottom: 0 },
         ]}
       />
+
+      {/* Uncomment to see hitboxes for pipes (dont forget the bird hitbox)
       <Hitbox
-        x={pipeX._value - PIPE_WIDTH / 2}
-        y={0}
+        x={pipeX._value - PIPE_WIDTH / 4 +50}
+        y={-20}
         width={PIPE_WIDTH}
         height={topPipeHeight}
       />
       <Hitbox
-        x={pipeX._value - PIPE_WIDTH / 2}
-        y={HEIGHT - bottomPipeHeight}
+        x={pipeX._value - PIPE_WIDTH / 4 + 50}
+        y={HEIGHT - bottomPipeHeight +20}
         width={PIPE_WIDTH}
         height={bottomPipeHeight}
       />
+      */}
+
     </>
   );
 };
@@ -80,10 +87,10 @@ const Pipe = ({ pipeX, gapY }) => {
 const App = () => {
   const [birdY, setBirdY] = useState(new Animated.Value(0));
   const [currentPosition, setCurrentPosition] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
   const PIPE_GAP = WIDTH;
   const initialGapY = getRandomGapY(HEIGHT / 2);
   const [pipeIndex, setPipeIndex] = useState(0);
-  const [pipesPassed, setPipesPassed] = useState(0);
   const [pipes, setPipes] = useState([
     { x: new Animated.Value(WIDTH - 20), gapY: initialGapY },
     {
@@ -125,10 +132,28 @@ const App = () => {
     }
   };
 
-
-
-
   const [score, setScore] = useState(1);
+
+  const resetGame = () => {
+  setBirdY(new Animated.Value(0));
+  setCurrentPosition(0);
+  setGameOver(false);
+  setPipeIndex(0);
+  setPipes([
+    { x: new Animated.Value(WIDTH - 20), gapY: initialGapY },
+    {
+      x: new Animated.Value(WIDTH + PIPE_GAP),
+      gapY: getRandomGapY(initialGapY),
+    },
+    {
+      x: new Animated.Value(WIDTH + 2 * PIPE_GAP + 20),
+      gapY: getRandomGapY(initialGapY),
+    },
+  ]);
+  setGameReady(false);
+  setGameStarted(false);
+  setScore(1);
+};
 
   const checkCollision = () => {
     pipes.forEach((pipe) => {
@@ -140,20 +165,21 @@ const App = () => {
 
       const birdX = WIDTH / 2;
       const birdYY = (birdY._value * -HEIGHT) / 2 + HEIGHT / 2;
-      //console.log("Top" + gapTopY);
-      //console.log(gapBottomY)
-      //console.log(birdYY);
 
       if (
-        birdX + BIRD_SIZE / 2 > pipeX - PIPE_WIDTH / 2 &&
-        birdX - BIRD_SIZE / 2 < pipeX + PIPE_WIDTH / 2
+        birdX + BIRD_SIZE / 2 - 30 > pipeX - PIPE_WIDTH / 2 &&
+        birdX - BIRD_SIZE / 2 + 30 < pipeX + PIPE_WIDTH / 2
       ) {
         if (
-          birdYY - BIRD_SIZE / 2 > gapTopY ||
-          birdYY + BIRD_SIZE / 2 < gapBottomY
+          birdYY - BIRD_SIZE / 2 > gapTopY + 20 ||
+          birdYY + BIRD_SIZE / 2 < gapBottomY - 20
         ) {
           console.log(gapBottomY + ' ' + birdYY + ' ' + gapTopY);
           console.log('Collision Detected');
+          setGameOver(true); 
+          setTimeout(() => {
+            resetGame(); // Call resetGame function after a 1-second delay
+          }, 1000);
         }
       }
     });
@@ -164,7 +190,6 @@ const App = () => {
       const pipeXValue = pipe.x._value;
       if (pipeXValue < BIRD_SIZE && pipeXValue + PIPE_SPEED >= BIRD_SIZE) {
         setScore((prevScore) => prevScore + 1);
-        setPipesPassed((prevPipesPassed) => prevPipesPassed + 1);
         console.log('Passed Pipe');
       }
     });
@@ -191,7 +216,7 @@ const App = () => {
   }, [gameStarted]);
 
   useEffect(() => {
-    if (gameStarted) {
+    if (gameStarted && !gameOver) {
       const interval = setInterval(() => {
         setPipes((pipes) =>
           pipes.map((pipe, index) => {
@@ -215,7 +240,7 @@ const App = () => {
 
       return () => clearInterval(interval);
     }
-  }, [gameStarted]);
+  }, [gameStarted, gameOver]);
 
   useEffect(() => {
     setCurrentPosition(birdY._value * 500);
@@ -233,18 +258,25 @@ const App = () => {
   };
 
   return (
-    <View style={[styles.container, pipesPassed >= 5 && { backgroundColor: 'purple' },pipesPassed >= 10 && { backgroundColor: 'yellow' },pipesPassed >= 15 && { backgroundColor: 'grey' }  ]}>
+    <View
+      style={[
+        styles.container,
+        score >= 5 && { backgroundColor: 'yellow' },
+        score >= 10 && { backgroundColor: 'lightblue' },
+        score >= 15 && { backgroundColor: 'yellow' },
+      ]}>
       {gameStarted &&
-      pipes.map(({ x, gapY }, i) => <Pipe key={i} pipeX={x} gapY={gapY} />)}
-    <Animated.View style={[styles.bird, birdStyle]} />
-    {gameStarted && <Text style={styles.score}>{score}</Text>}
-    <Hitbox
-      x={WIDTH / 2 - BIRD_SIZE / 2}
-      y={(birdY._value * -HEIGHT) / 2 + HEIGHT / 2 - BIRD_SIZE / 2}
-      width={BIRD_SIZE}
-      height={BIRD_SIZE}
-    />
+        pipes.map(({ x, gapY }, i) => <Pipe key={i} pipeX={x} gapY={gapY} />)}
+      <Animated.View style={[styles.bird, birdStyle]} />
+      {gameStarted && <Text style={styles.score}>{score}</Text>}
+      <Hitbox
+      x={WIDTH / 2}
+      y={(birdY._value * HEIGHT) / 2 + HEIGHT / 2 - BIRD_SIZE / 2}
+      width={BIRD_SIZE+10}
+      height={BIRD_SIZE+10}
+      />
 
+      
       {!gameStarted && gameReady ? (
         <TouchableOpacity onPress={handlePress} style={styles.jumpButton}>
           <Text style={styles.jumpButtonText}>Jump</Text>
@@ -275,12 +307,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'lightblue',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  bird: {
-    backgroundColor: 'red',
-    height: BIRD_SIZE,
-    width: BIRD_SIZE,
-    borderRadius: BIRD_SIZE / 2,
   },
   pipe: {
     position: 'absolute',
