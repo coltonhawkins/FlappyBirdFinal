@@ -104,11 +104,41 @@ const App = () => {
 
   const [score, setScore] = useState(1);
 
+  const checkCollision = () => {
+    pipes.forEach((pipe) => {
+      const pipeX = pipe.x._value; //pixel of
+      const gapTopY =
+        HEIGHT - (pipe.gapY - GAP_SIZE / 2 - PIPE_HEIGHT / 2 - PIPE_OFFSET); //y value of pixel of the bottom of the top pipe
+      const gapBottomY =
+        HEIGHT - pipe.gapY - GAP_SIZE / 2 - PIPE_HEIGHT / 2 + PIPE_OFFSET; //y value of pixel of the top of the bottom pipe
+
+      const birdX = WIDTH / 2;
+      const birdYY = (birdY._value * -HEIGHT) / 2 + HEIGHT / 2;
+      //console.log("Top" + gapTopY);
+      //console.log(gapBottomY)
+      //console.log(birdYY);
+
+      if (
+        birdX + BIRD_SIZE / 2 > pipeX - PIPE_WIDTH / 2 &&
+        birdX - BIRD_SIZE / 2 < pipeX + PIPE_WIDTH / 2
+      ) {
+        if (
+          birdYY - BIRD_SIZE / 2 > gapTopY ||
+          birdYY + BIRD_SIZE / 2 < gapBottomY
+        ) {
+          console.log(gapBottomY + ' ' + birdYY + ' ' + gapTopY);
+          console.log('Collision Detected');
+        }
+      }
+    });
+  };
+
   const checkPassedPipe = () => {
     pipes.forEach((pipe) => {
       const pipeXValue = pipe.x._value;
       if (pipeXValue < BIRD_SIZE && pipeXValue + PIPE_SPEED >= BIRD_SIZE) {
         setScore((prevScore) => prevScore + 1);
+        console.log('Passed Pipe');
       }
     });
   };
@@ -153,6 +183,7 @@ const App = () => {
           })
         );
         checkPassedPipe();
+        checkCollision();
       }, 1000 / 60);
 
       return () => clearInterval(interval);
@@ -269,4 +300,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default App;
+export
