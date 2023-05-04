@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 
-const BIRD_SIZE = 25;
+const BIRD_SIZE = 20;
 const GRAVITY = 9.8;
 
 const PIPE_WIDTH = 60 * 2;
@@ -31,10 +31,22 @@ const getRandomGapY = (prevGapY) => {
   const randomGapY = Math.random() * (maxGapY - minGapY) + minGapY;
   return randomGapY;
 };
-
+  const Hitbox = ({ x, y, width, height }) => {
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        left: x,
+        top: y,
+        width,
+        height,
+        backgroundColor: 'rgba(255, 0, 0, 0.5)',
+      }}
+    />
+  );
+};
 const Pipe = ({ pipeX, gapY }) => {
-  const bottomPipeHeight =
-    HEIGHT - gapY - GAP_SIZE / 2 - PIPE_HEIGHT / 2 + PIPE_OFFSET;
+  const bottomPipeHeight = HEIGHT - gapY - GAP_SIZE / 2 - PIPE_HEIGHT / 2 + PIPE_OFFSET;
   const topPipeHeight = gapY - GAP_SIZE / 2 - PIPE_HEIGHT / 2 - PIPE_OFFSET;
   return (
     <>
@@ -50,6 +62,18 @@ const Pipe = ({ pipeX, gapY }) => {
           styles.pipe,
           { height: bottomPipeHeight, left: pipeX, bottom: 0 },
         ]}
+      />
+      <Hitbox
+        x={pipeX._value - PIPE_WIDTH / 2}
+        y={0}
+        width={PIPE_WIDTH}
+        height={topPipeHeight}
+      />
+      <Hitbox
+        x={pipeX._value - PIPE_WIDTH / 2}
+        y={HEIGHT - bottomPipeHeight}
+        width={PIPE_WIDTH}
+        height={bottomPipeHeight}
       />
     </>
   );
@@ -101,6 +125,9 @@ const App = () => {
       });
     }
   };
+
+
+
 
   const [score, setScore] = useState(1);
 
@@ -208,9 +235,15 @@ const App = () => {
   return (
     <View style={styles.container}>
       {gameStarted &&
-        pipes.map(({ x, gapY }, i) => <Pipe key={i} pipeX={x} gapY={gapY} />)}
-      <Animated.View style={[styles.bird, birdStyle]} />
-      {gameStarted && <Text style={styles.score}>{score}</Text>}
+      pipes.map(({ x, gapY }, i) => <Pipe key={i} pipeX={x} gapY={gapY} />)}
+    <Animated.View style={[styles.bird, birdStyle]} />
+    {gameStarted && <Text style={styles.score}>{score}</Text>}
+    <Hitbox
+      x={WIDTH / 2 - BIRD_SIZE / 2}
+      y={(birdY._value * -HEIGHT) / 2 + HEIGHT / 2 - BIRD_SIZE / 2}
+      width={BIRD_SIZE}
+      height={BIRD_SIZE}
+    />
 
       {!gameStarted && gameReady ? (
         <TouchableOpacity onPress={handlePress} style={styles.jumpButton}>
@@ -300,4 +333,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export
+export default App;
