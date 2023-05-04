@@ -20,7 +20,7 @@ const PIPE_OFFSET = 0;
 const WIDTH = Dimensions.get('window').width;
 const HEIGHT = Dimensions.get('window').height;
 
-const GAP_DEVIATION = 100;
+const GAP_DEVIATION = 200;
 
 const getRandomGapY = (prevGapY) => {
   const minGapY = Math.max(PIPE_HEIGHT * 3, prevGapY - GAP_DEVIATION);
@@ -110,27 +110,26 @@ const App = () => {
     setGameReady(true);
   };
 
-  const handlePress = () => {
-    if (!gameStarted && gameReady) {
-      setGameStarted(true);
-    } else if (!gameStarted) {
-      startGame();
-    } else {
-      birdY.stopAnimation(() => {
+const handlePress = () => {
+  if (!gameStarted && gameReady) {
+    setGameStarted(true);
+  } else if (!gameStarted) {
+    startGame();
+  } else {
+    birdY.stopAnimation(() => {
+      Animated.timing(birdY, {
+        toValue: birdY._value - 0.19,
+        duration: 150,
+      }).start(() => {
         Animated.timing(birdY, {
-          toValue: birdY._value - 0.19,
-          duration: 150,
-          useNativeDriver: true,
-        }).start(() => {
-          Animated.timing(birdY, {
-            toValue: 1,
-            duration: 1345,
-            useNativeDriver: true,
-          }).start();
-        });
+          toValue: 1,
+          duration: 1345,
+        }).start();
       });
-    }
-  };
+    });
+  }
+};
+
 
   const [score, setScore] = useState(1);
 
@@ -205,15 +204,15 @@ const App = () => {
     }
   }, [gameStarted, pipeIndex]);
 
-  useEffect(() => {
-    if (gameStarted) {
-      Animated.timing(birdY, {
-        toValue: 1,
-        duration: 2000,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [gameStarted]);
+useEffect(() => {
+  if (gameStarted) {
+    Animated.timing(birdY, {
+      toValue: 1,
+      duration: 2000,
+    }).start();
+  }
+}, [gameStarted]);
+
 
   useEffect(() => {
     if (gameStarted && !gameOver) {
@@ -246,16 +245,17 @@ const App = () => {
     setCurrentPosition(birdY._value * 500);
   }, [birdY]);
 
-  const birdStyle = {
-    transform: [
-      {
-        translateY: birdY.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, 500],
-        }),
-      },
-    ],
-  };
+const birdStyle = {
+  transform: [
+    {
+      translateY: birdY.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-250, 250],
+      }),
+    },
+  ],
+};
+
 
   return (
     <View
@@ -272,8 +272,8 @@ const App = () => {
       <Hitbox
       x={WIDTH / 2}
       y={(birdY._value * HEIGHT) / 2 + HEIGHT / 2 - BIRD_SIZE / 2}
-      width={BIRD_SIZE+10}
-      height={BIRD_SIZE+10}
+      width={BIRD_SIZE+25}
+      height={BIRD_SIZE+25}
       />
 
       
