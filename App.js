@@ -45,7 +45,7 @@ const Hitbox = ({ x, y, width, height }) => {
         height,
       }}
     >
-      <Image source={birdImage} style={{ width: '100%', height: '100%' }} />
+      <Image source={birdImage} style={{ width: '140%', height: '140%' }} />
     </View>
   );
 };
