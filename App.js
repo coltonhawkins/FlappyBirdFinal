@@ -10,8 +10,6 @@ import {
 } from 'react-native';
 
 const BIRD_SIZE = 20;
-const GRAVITY = 9.8;
-
 const PIPE_WIDTH = 60 * 2;
 const PIPE_HEIGHT = 60;
 const GAP_SIZE = 200;
@@ -85,6 +83,7 @@ const App = () => {
   const PIPE_GAP = WIDTH;
   const initialGapY = getRandomGapY(HEIGHT / 2);
   const [pipeIndex, setPipeIndex] = useState(0);
+  const [pipesPassed, setPipesPassed] = useState(0);
   const [pipes, setPipes] = useState([
     { x: new Animated.Value(WIDTH - 20), gapY: initialGapY },
     {
@@ -165,6 +164,7 @@ const App = () => {
       const pipeXValue = pipe.x._value;
       if (pipeXValue < BIRD_SIZE && pipeXValue + PIPE_SPEED >= BIRD_SIZE) {
         setScore((prevScore) => prevScore + 1);
+        setPipesPassed((prevPipesPassed) => prevPipesPassed + 1);
         console.log('Passed Pipe');
       }
     });
@@ -233,7 +233,7 @@ const App = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, pipesPassed >= 5 && { backgroundColor: 'purple' },pipesPassed >= 10 && { backgroundColor: 'yellow' },pipesPassed >= 15 && { backgroundColor: 'grey' }  ]}>
       {gameStarted &&
       pipes.map(({ x, gapY }, i) => <Pipe key={i} pipeX={x} gapY={gapY} />)}
     <Animated.View style={[styles.bird, birdStyle]} />
