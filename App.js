@@ -7,8 +7,10 @@ import {
   Dimensions,
   Text,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 
+const birdImage = require('./assets/birdPNGImage.png');
 const BIRD_SIZE = 20;
 const GRAVITY = 9.8;
 
@@ -31,6 +33,7 @@ const getRandomGapY = (prevGapY) => {
   const randomGapY = Math.random() * (maxGapY - minGapY) + minGapY;
   return randomGapY;
 };
+
 const Hitbox = ({ x, y, width, height }) => {
   return (
     <View
@@ -40,9 +43,10 @@ const Hitbox = ({ x, y, width, height }) => {
         top: y,
         width,
         height,
-        backgroundColor: 'rgba(255, 0, 0, 1)',
       }}
-    />
+    >
+      <Image source={birdImage} style={{ width: '100%', height: '100%' }} />
+    </View>
   );
 };
 const Pipe = ({ pipeX, gapY }) => {
